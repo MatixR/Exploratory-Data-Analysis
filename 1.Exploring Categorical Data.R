@@ -1,6 +1,6 @@
 # Exploring categorical data ####
-url_comics <- "https://assets.datacamp.com/production/course_1796/datasets/comics.csv"
-download.file(url_comics, "comics.csv")
+#url_comics <- "https://assets.datacamp.com/production/course_1796/datasets/comics.csv"
+#download.file(url_comics, "comics.csv")
 
 # __ Bar chart expectations ####
 
