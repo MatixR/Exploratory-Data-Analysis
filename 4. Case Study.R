@@ -1,5 +1,4 @@
 # Introducing the data ####
-
 # __ Spam and num_char####
 # Load packages
 library(ggplot2)
