@@ -1,0 +1,754 @@
+---
+title: "Exploratory Data Analysis"
+author: "Khac Phuoc Le"
+date: "12/13/2017"
+output:
+  html_document:
+    df_print: tibble
+    highlight: tango
+    keep_md: yes
+    number_sections: yes
+    toc: yes
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,  cache = TRUE, message = FALSE, warning = FALSE)
+``` 
+
+# Exploratory Data Analysis
+
+
+When your dataset is represented as a table or a database, it’s difficult to observe much about it beyond its size and the types of variables it contains. In this course, you’ll learn how to use graphical and numerical techniques to begin uncovering the structure of your data. Which variables suggest interesting relationships? Which observations are unusual? By the end of the course, you’ll be able to answer these questions and more, while generating graphics that are both insightful and beautiful.
+
+
+## Exploring Categorical Data 
+In this chapter, you will learn how to create graphical and numerical summaries of two categorical variables.
+```{r  }
+# Install gapminder R package. Once it's installed, you won't have to run this code again
+#install.packages("dplyr") 
+#install.packages("ggplot2")
+#Install.packages("openintro")
+
+# Load dplyr package
+library(dplyr) #for use of dplyr functions such as glimpse(), mutate(), and filter()
+library(ggplot2) #for use of ggplot2 functions such ggplot()
+library(knitr)
+#library(gapminder) #for use of gapminder data (ch3.2)
+#library(openintro) #for use of email data (ch4)
+
+
+#url_comics <- "https://assets.datacamp.com/production/course_1796/datasets/comics.csv"
+#download.file(url_comics, "comics.csv")
+comics <- read.csv("comics.csv",)
+comics <- as_tibble(comics)
+```
+
+
+
+
+
+### Bar chart expectations
+
+Suppose you've asked 30 people, some young, some old, what their preferred flavor of pie is: apple or pumpkin. That data could be summarized in a side-by-side barchart. Here are three possibilities for how it might look.
+
+
+
+```{r, echo=FALSE, out.width = "700px" }
+include_graphics("1.1.png")
+```
+
+
+Which one of the barcharts shows no relationship between age and flavor? In
+other words, which shows that pie preference is the same for both young and
+old?
+
+
+
+### Contingency table review
+
+
+
+```{r  }
+# Print the first rows of the data
+comics 
+
+# Check levels of align
+levels(comics$align)
+
+# Check the levels of gender
+levels(comics$gender)
+
+# Create a 2-way contingency table
+(tab <- table(comics$align, comics$gender))
+```
+
+
+
+### Dropping levels 
+
+
+
+```{r }
+# Load dplyr
+library(dplyr)
+
+# Print tab
+tab
+
+# Remove align level
+comics <- comics %>%
+  filter(align != "Reformed Criminals") %>%
+  droplevels()
+```
+
+
+
+
+
+### Side-by-side barcharts 
+
+```{r }
+# Load ggplot2
+library(ggplot2)
+
+# Create side-by-side barchart of gender by alignment
+ggplot(comics, aes(x = align, fill = gender)) + 
+  geom_bar(position = "dodge")
+
+# Create side-by-side barchart of alignment by gender
+ggplot(comics, aes(x = gender, fill = align)) + 
+  geom_bar(position = "dodge") +
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+
+### Bar chart interpretation 
+
+* Among characters with "Neutral" alignment, males are the most common.
+* In general, there is an association between gender and alignment.
+* There are more male characters than female characters in this dataset.
+
+
+
+
+## Counts vs. proportions 
+
+
+### Conditional proportions 
+The following code generates tables of joint and conditional proportions, respectively:
+
+
+
+```{r }
+tab <- table(comics$align, comics$gender)
+options(scipen = 999, digits = 3) # Print fewer digits
+prop.table(tab)     # Joint proportions
+prop.table(tab, 2)  # Conditional on columns
+```
+
+Approximately what proportion of all female characters are good?  
+-> 51%
+
+
+### Counts vs. proportions (2)
+
+Bar charts can tell dramatically different stories depending on whether they represent counts or proportions and, if proportions, what the proportions are conditioned on. To demonstrate this difference, you'll construct two barcharts in this exercise: one of counts and one of proportions.
+
+```{r }
+# Plot of gender by align
+ggplot(comics, aes(x = align, fill = gender)) +
+  geom_bar()
+  
+# Plot proportion of gender, conditional on align
+ggplot(comics, aes(x = align, fill = gender)) + 
+  geom_bar(position = "fill") +
+  ylab("proportion")
+```
+
+
+
+
+## Distribution of one variable 
+
+### Marginal barchart 
+
+If you are interested in the distribution of alignment of all superheroes, it makes sense to construct a barchart for just that single variable.
+
+You can improve the interpretability of the plot, though, by implementing some sensible ordering. Superheroes that are ```Neutral``` show an alignment between ```Good``` and ```Bad```, so it makes sense to put that bar in the middle.
+```{r }
+# Change the order of the levels in align
+comics$align <- factor(comics$align, 
+                       levels = c("Bad", "Neutral", "Good"))
+
+# Create plot of align
+ggplot(comics, aes(x = align)) + 
+  geom_bar()
+
+```
+
+
+
+
+
+
+
+### Conditional barchart 
+```{r }
+# Plot of alignment broken down by gender
+ggplot(comics, aes(x = align)) + 
+  geom_bar() +
+  facet_wrap(~ gender)
+
+
+```
+
+
+
+
+
+
+### Improve piechart 
+The piechart is a very common way to represent the distribution of a single categorical variable, but they can be more difficult to interpret than barcharts.
+
+```{r, echo=FALSE, out.width = "400px" }
+include_graphics("1.13.png")
+```
+
+This is a piechart of a dataset called ```pies``` that contains the favorite pie flavors of 98 people. Improve the representation of these data by constructing a barchart that is ordered in descending order of count.
+
+```{r }
+apple <- rep("apple",17)
+blueberry <- rep("blueberry", 14)
+boston_creme <- rep("boston creme", 15)
+cherry <- rep("cherry", 13)
+key_lime <- rep("key lime", 16)
+pumpkin <- rep("pumpkin", 12)
+strawberry <- rep("strawberry", 11)
+
+pies <- data.frame(c(apple, blueberry, boston_creme, cherry, key_lime, pumpkin, strawberry))
+colnames(pies) <- "flavor"
+```
+
+* Use the code provided to reorder the levels of flavor so that they're in descending order by count.
+* Create a barchart of flavor and orient the labels vertically so that they're easier to read. The default coloring may look drab by comparison, so change the fill of the bars to "chartreuse".
+
+```{r }
+# Put levels of flavor in decending order
+lev <- c("apple", "key lime", "boston creme", "blueberry", "cherry", "pumpkin", "strawberry")
+pies$flavor <- factor(pies$flavor, levels = lev)
+
+# Create barchart of flavor
+ggplot(pies, aes(x = flavor)) + 
+  geom_bar(fill = "chartreuse") + 
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+
+# Exploring numerical data
+In this chapter, you will learn how to graphically summarize numerical data.
+
+## Exploring numerical data
+In this chapter, you'll be working with the ```cars``` dataset, which records characteristics on all of the new models of cars for sale in the US in a certain year. You will investigate the distribution of mileage across a categorial variable, but before you get there, you'll want to familiarize yourself with the dataset.
+
+### Faceted histogram
+
+```{r}
+cars <- read.csv("cars.csv")
+
+# Load package
+library(ggplot2)
+
+# Learn data structure
+str(cars)
+
+# Create faceted histogram
+ggplot(cars, aes(x = city_mpg)) +
+  geom_histogram() +
+  facet_wrap(~ suv)
+```
+
+
+### Boxplots and density plots
+The mileage of a car tends to be associated with the size of its engine (as measured by the number of cylinders). To explore the relationship between these two variables, you could stick to using histograms, but in this exercise you'll try your hand at two alternatives: the box plot and the density plot.
+```{r}
+unique(cars$ncyl)
+```
+A quick look at ```unique(cars$ncyl)``` shows that there are more possible levels of ncyl than you might think. Here, restrict your attention to the most common levels.
+
+```{r}
+# Filter cars with 4, 6, 8 cylinders
+common_cyl <- filter(cars, ncyl %in% c(4,6,8))
+
+# Create box plots of city mpg by ncyl
+ggplot(common_cyl, aes(x = as.factor(ncyl), y = city_mpg)) +
+  geom_boxplot()
+
+# Create overlaid density plots for same data
+ggplot(common_cyl, aes(x = city_mpg, fill = as.factor(ncyl))) +
+  geom_density(alpha = .3)
+```
+
+
+### Compare distribution via plots
+Which of the following interpretations of the plot are valid?
+
+* The highest mileage cars have 4 cylinders.
+* Most of the 4 cylinder cars get better mileage than even the most efficient 8 cylinder cars.
+* The typical 4 cylinder car gets better mileage than the typical 6 cylinder car, which gets better mileage than the typical 8 cylinder car.
+* The variability in mileage of 8 cylinder cars seem much smaller than that of 4 cylinder cars.
+
+## Distribution of one variable
+Now, turn your attention to a new variable: ```horsepwr``. The goal is to get a sense of the marginal distribution of this variable and then compare it to the distribution of horsepower conditional on the price of the car being less than $25,000.
+
+You'll be making two plots using the "data pipeline" paradigm, where you start with the raw data and end with the plot.
+
+### Marginal and conditional histograms
+```{r}
+# Create hist of horsepwr
+cars %>%
+  ggplot(aes(horsepwr)) +
+  geom_histogram() +
+  ggtitle("Horsepower Distribution")
+
+# Create hist of horsepwr for affordable cars
+cars %>% 
+  filter(msrp < 25000) %>%
+  ggplot(aes(horsepwr)) +
+  geom_histogram() +
+  xlim(c(90, 550)) +
+  ggtitle("Horsepower Distribution for cheap cars")
+
+```
+
+
+### Marginal and conditional histograms interpretation
+* The highest horsepower car in the less expensive range has just under 250 horsepower.
+* Cars with around 200 horsepower are more common than cars with around 300 horsepower.
+* Most cars under $25,000 vary from roughly 100 horsepower to roughly 250 horsepower.
+
+### Three binwidths
+Before you take these plots for granted, it's a good idea to see how things change when you alter the binwidth. The binwidth determines how smooth your distribution will appear: the smaller the binwidth, the more jagged your distribution becomes. It's good practice to consider several binwidths in order to detect different types of structure in your data.
+
+
+```{r}
+# Create hist of horsepwr with binwidth of 3
+cars %>%
+  ggplot(aes(horsepwr)) +
+  geom_histogram(binwidth = 3) +
+  ggtitle("Bindwidth of 3")
+
+# Create hist of horsepwr with binwidth of 30
+cars %>%
+  ggplot(aes(horsepwr)) +
+  geom_histogram(binwidth = 30) +
+  ggtitle("Bindwidth of 30")
+
+# Create hist of horsepwr with binwidth of 60
+cars %>%
+  ggplot(aes(horsepwr)) +
+  geom_histogram(binwidth = 60) +
+  ggtitle("Bindwidth of 60")
+
+```
+
+
+### Three binwidths interpretation
+What feature is present in Plot A that's not found in B or C?
+
+* There is a tendency for cars to have horsepower right at 200 or 300 horsepower.
+
+## Box plots
+
+
+### Box plots for outliers
+In addition to indicating the center and spread of a distribution, a box plot provides a graphical means to detect outliers. You can apply this method to the ``msrp``` column (manufacturer's suggested retail price) to detect if there are unusually expensive or cheap cars.
+
+```{r}
+# Construct box plot of msrp
+cars %>%
+  ggplot(aes(x = 1, y = msrp)) +
+  geom_boxplot()
+
+# Exclude outliers from data
+cars_no_out <- cars %>%
+  filter(msrp < 100000)
+
+# Construct box plot of msrp using the reduced dataset
+cars_no_out %>%
+  ggplot(aes(x = 1, y = msrp)) +
+  geom_boxplot()
+```
+
+
+### Plot selection
+Consider two other columns in the ```cars ``` dataset:  ```city_mpg ``` and  ```width ```. Which is the most appropriate plot for displaying the important features of their distributions? Remember, both density plots and box plots display the central tendency and spread of the data, but the box plot is more robust to outliers.
+
+
+```{r}
+# Create plot of city_mpg
+cars %>%
+  ggplot(aes(x = 1, y = city_mpg)) +
+  geom_boxplot()
+
+# Create plot of width
+cars %>% 
+  ggplot(aes(x = width)) +
+  geom_density()
+```
+
+Because the ```city_mpg``` variable has a much wider range with its outliers, it's best to display its distribution as a box plot.
+
+
+## Visualization in higher dimensions
+
+### 3 variable plot
+
+Faceting is a valuable technique for looking at several conditional distributions at the same time. If the faceted distributions are laid out in a grid, you can consider the association between a variable and two others, one on the rows of the grid and the other on the columns.
+
+```{r}
+# Facet hists using hwy mileage and ncyl
+common_cyl %>%
+  ggplot(aes(x = hwy_mpg)) +
+  geom_histogram() +
+  facet_grid(ncyl ~ suv) +
+  ggtitle("ncyl vs suv")
+```
+
+### Interpret 3 var plot
+
+* There are more non-SUVs  than SUVs across all cylinder types.
+* Across both SUVs and non-SUVs, mileage tends to decrease as the number of cylinders increases.
+
+
+# Numerical Summaries
+Now that we've looked at exploring categorical and numerical data, you'll learn some useful statistics for describing distributions of data.
+
+## Measures of center
+
+### Choice of center measure
+The choice of measure for center can have a dramatic impact on what we consider to be a typical observation, so it is important that you consider the shape of the distribution before deciding on the measure.
+
+Which set of measures of central tendency would be worst for describing the two distributions shown here?
+
+```{r, echo=FALSE, out.width = "700px" }
+include_graphics("3.2.png")
+```
+
+* A: mean, B: mode
+
+
+### Calculate center measures
+
+Throughout this chapter, you will use data from gapminder, which tracks demographic data in countries of the world over time. 
+
+
+```{r}
+library(gapminder)
+# Create dataset of 2007 data
+gap2007 <- filter(gapminder, year == 2007)
+
+# Compute groupwise mean and median lifeExp
+gap2007 %>%
+  group_by(continent) %>%
+  summarize(mean(lifeExp),
+            median(lifeExp))
+
+# Generate box plots of lifeExp for each continent
+gap2007 %>%
+  ggplot(aes(x = continent, y = lifeExp)) +
+  geom_boxplot()
+```
+
+
+## Measures of variability
+
+### Choice of spread measure
+The choice of measure for spread can dramatically impact how variable we consider our data to be, so it is important that you consider the shape of the distribution before deciding on the measure.
+
+Which set of measures of spread would be worst for describing the two distributions shown here?
+
+```{r, echo=FALSE, out.width = "700px" }
+include_graphics("3.5.png")
+```
+
+* A: Variance, B: Range
+
+### Calculate spread measures
+
+
+```{r}
+# Compute groupwise measures of spread
+gap2007 %>%
+  group_by(continent) %>%
+  summarize(sd(lifeExp),
+            IQR(lifeExp),
+            n())
+
+# Generate overlaid density plots
+gap2007 %>%
+  ggplot(aes(x = lifeExp, fill = continent)) +
+  geom_density(alpha = 0.3)
+
+```
+
+
+
+### Choose measures for center and spread
+Consider the density plots shown here. What are the most appropriate measures to describe their centers and spreads? In this exercise, you'll select the measures and then calculate them.
+
+```{r, echo=FALSE, out.width = "700px" }
+include_graphics("3.7.png")
+```
+
+```{r}
+# Compute stats for lifeExp in Americas
+gap2007 %>%
+  filter(continent == "Americas") %>%
+  summarize(mean(lifeExp),
+            sd(lifeExp))
+
+# Compute stats for population
+gap2007 %>%
+  summarize(median(pop),
+            IQR(pop))
+```
+
+
+
+Like mean and standard deviation, median and IQR measure the central tendency and spread, respectively, but are robust to outliers and non-normal data.
+
+## Shape and transformations
+
+### Describe the shape
+To build some familiarity with distributions of different shapes, consider the four that are plotted here. Which of the following options does the best job of describing their shape in terms of modality and skew/symmetry?
+
+```{r, echo=FALSE, out.width = "700px" }
+include_graphics("3.9.png")
+```
+
+* A: unimodal left-skewed; 
+* B: unimodal symmetric; 
+* C: unimodal right-skewed, 
+* D: bimodal symmetric.
+
+### Transformations
+Highly skewed distributions can make it very difficult to learn anything from a visualization. Transformations can be helpful in revealing the more subtle structure.
+
+Here you'll focus on the population variable, which exhibits strong right skew, and transform it with the natural logarithm function (```log()``` in R).
+
+
+```{r}
+# Create density plot of old variable
+gap2007 %>%
+  ggplot(aes(x = pop)) +
+  geom_density()
+
+# Transform the skewed pop variable
+gap2007 <- gap2007 %>%
+  mutate(log_pop = log(pop))
+
+# Create density plot of new variable
+gap2007 %>%
+  ggplot(aes(x = log_pop)) +
+  geom_density()
+```
+
+
+## Outliers
+
+### Identify outliers
+
+```{r, echo=FALSE, out.width = "700px" }
+include_graphics("3.12.png")
+```
+Consider the distribution, shown here, of the life expectancies of the countries in Asia. The box plot identifies one clear outlier: a country with a notably low life expectancy. Do you have a guess as to which country this might be? Test your guess in the console using either ```min()``` or ```filter()```, then proceed to building a plot with that country removed
+
+```{r}
+# Filter for Asia, add column indicating outliers
+gap_asia <- gap2007 %>%
+  filter(continent =="Asia" ) %>%
+  mutate(is_outlier = lifeExp < 50)
+
+# Remove outliers, create box plot of lifeExp
+gap_asia %>%
+  filter(!is_outlier) %>%
+  ggplot(aes(x = 1, y = lifeExp)) +
+  geom_boxplot()
+```
+
+
+
+# Case Study
+Apply what you've learned to explore and summarize a real world dataset in this case study of email spam.
+
+
+
+## Introducing the data
+```
+?email
+```
+
+### Spam and num_char
+ Is there an association between spam and the length of an email? You could imagine a story either way:
+ 
+ * Spam is more likely to be a short message tempting me to click on a link, or
+ * My normal email is likely shorter since I exchange brief emails with my friends all the time.
+ 
+ Here, you'll use the ```email``` dataset to settle that question. Begin by bringing up the help file and learning about all the variables with ```?email```.
+ 
+ 
+```{r}
+# Load packages
+library(ggplot2)
+library(dplyr)
+library(openintro)
+
+# Compute summary statistics
+email %>%
+  group_by(spam) %>%
+  summarize(median(num_char), IQR(num_char))
+
+# Create plot
+email %>%
+  mutate(log_num_char = log(num_char)) %>%
+  ggplot(aes(x = spam, y = log_num_char)) +
+  geom_boxplot()
+```
+ 
+### Spam and num_char interpretation
+
+* The median length of not-spam emails is greater than that of spam emails.
+
+### Spam and !!!
+
+Let's look at a more obvious indicator of spam: exclamation marks. ```exclaim_mess``` contains the number of exclamation marks in each message. Using summary statistics and visualization, see if there is a relationship between this variable and whether or not a message is spam.
+
+```{r}
+# Compute center and spread for exclaim_mess by spam
+email %>%
+  group_by(spam) %>%
+  summarize(median(exclaim_mess), IQR(exclaim_mess))
+
+
+# Create plot for spam and exclaim_mess
+ggplot(email, aes(x = log(exclaim_mess + 0.01))) + 
+  geom_histogram() +
+  facet_wrap(~ spam)
+
+```
+
+   
+### Spam and !!! interpretation
+
+* The most common value of `exclaim_mess` in both classes of email is zero (a `log(exclaim_mess)` of -4.6 after adding .01).
+* Even after a transformation, the distribution of exclaim_mess in both classes of email is right-skewed.
+* The typical number of exclamations in the not-spam group appears to be slightly higher than in the spam group.
+* here are more cases of not-spam in this dataset than spam.
+
+## Check-in 1
+
+### Collapsing levels
+ 
+ 
+ 
+ 
+ 
+```{r}
+# get a sense of its distribution
+email$spam <- as.factor(email$spam)
+table(email$image)
+
+# Create plot of proportion of spam by image
+email %>%
+  mutate(has_image = image > 0) %>%
+  ggplot(aes(x = has_image, fill = spam)) +
+  geom_bar(position = "fill")
+```
+ 
+### Image and spam interpretation
+
+* An email without an image is more likely to be not-spam than spam.
+
+### Data Integrity
+ Design a simple test to determine if images count as attached files
+ 
+```{r}
+# Test if images count as attachments
+sum(email$image > email$attach)
+```
+
+Since image is never greater than attach, we can infer that images are counted as attachments.
+ 
+### Answering questions with chains
+ 
+ 
+> Within non-spam emails, is the typical length of emails shorter for those that were sent to multiple people?
+
+This can be answered with the following chain:
+
+```{r}
+email %>%
+   filter(spam == 0) %>%
+   group_by(to_multiple) %>%
+   summarize(median(num_char))
+```
+
+* YES
+
+
+
+Build a chain to answer each of the following questions, both about the variable `dollar`.
+
+1. For emails containing the word "dollar", does the typical spam email contain a greater number of occurrences of the word than the typical non-spam email? Create a summary statistic that answers this question.
+
+```{r}
+# Question 1
+email %>%
+  filter(dollar > 0) %>%
+  group_by(spam) %>%
+  summarize(median(dollar))
+
+```
+
+2. If you encounter an email with greater than 10 occurrences of the word "dollar", is it more likely to be spam or not-spam? Create a barchart that answers this question.
+
+```{r}
+
+# Question 2
+email %>%
+  filter(dollar > 10) %>%
+  ggplot(aes(x = spam)) +
+  geom_bar()
+```
+
+## Check-in 2
+
+### What's in a number?
+
+Reorder the levels of number so that they preserve the natural ordering of `"none"`, then `"small"`, then `"big".
+
+```{r}
+# Reorder levels
+email$number <- factor(email$number, levels = c("none", "small", "big"))
+```
+
+
+Construct a faceted barchart of the association between number and spam.
+
+```{r}
+# Construct plot of number
+ggplot(email, aes(x =  number)) + 
+  geom_bar() + 
+  facet_wrap(~ spam)
+
+```
+
+### What's in a number interpretation
+
+- Given that an email contains a small number, it is more likely to be not-spam.
+- Given that an email contains a big number, it is more likely to be not-spam.
+- Within both spam and not-spam, the most common number is a small one.
+
+
